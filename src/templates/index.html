@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Vehicle Charging Station</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .slot {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .slot:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .slot.occupied {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .slot.available {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+
+        .slot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .slot-id {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .slot-status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .status-available {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .status-occupied {
+            background: #28a745;
+            color: white;
+        }
+
+        .vehicle-info {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #ddd;
+        }
+
+        .queue-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .queue-position {
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.5);
+            transition: all 0.3s;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.1) rotate(180deg);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚗⚡ Autonomous Vehicle Charging Station</h1>
+            <p class="subtitle">Real-Time Management Dashboard</p>
+        </header>
+
+        <div class="dashboard">
+            <!-- Station Overview -->
+            <div class="card">
+                <h2>📊 Station Overview</h2>
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Slots</div>
+                        <div class="stat-value" id="totalSlots">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Available</div>
+                        <div class="stat-value" id="availableSlots">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Utilization</div>
+                        <div class="stat-value" id="utilization">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Revenue</div>
+                        <div class="stat-value" id="revenue">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add Vehicle Form -->
+            <div class="card">
+                <h2>➕ Add Vehicle</h2>
+                <form id="addVehicleForm">
+                    <div class="form-group">
+                        <label for="vehicleId">Vehicle ID</label>
+                        <input type="text" id="vehicleId" required placeholder="e.g., AV-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleType">Vehicle Type</label>
+                        <select id="vehicleType" required>
+                            <option value="SEDAN">Sedan</option>
+                            <option value="SUV">SUV</option>
+                            <option value="TRUCK">Truck</option>
+                            <option value="BUS">Bus</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="batteryLevel">Current Battery (%)</label>
+                        <input type="number" id="batteryLevel" min="0" max="100" value="20" required>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="hasReservation">
+                            Has Reservation (Priority)
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success" style="width: 100%;">Add Vehicle</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Charging Slots -->
+        <div class="card">
+            <h2>🔌 Charging Slots</h2>
+            <div id="slotsContainer">
+                <div class="empty-state loading">Loading slots...</div>
+            </div>
+        </div>
+
+        <!-- Queue -->
+        <div class="card">
+            <h2>📋 Waiting Queue (<span id="queueCount">0</span>)</h2>
+            <div id="queueContainer">
+                <div class="empty-state">No vehicles in queue</div>
+            </div>
+        </div>
+
+        <!-- Refresh Button -->
+        <button class="refresh-btn" onclick="loadAllData()" title="Refresh">🔄</button>
+    </div>
+
+    <script>
+        // Load all data on page load
+        window.addEventListener('load', () => {
+            loadAllData();
+            // Auto-refresh every 5 seconds
+            setInterval(loadAllData, 5000);
+        });
+
+        async function loadAllData() {
+            await Promise.all([
+                loadStationStatus(),
+                loadSlots(),
+                loadQueue(),
+                loadBillingStats()
+            ]);
+        }
+
+        async function loadStationStatus() {
+            try {
+                const response = await fetch('/api/station/status');
+                const data = await response.json();
+                
+                document.getElementById('totalSlots').textContent = data.total_slots || 0;
+                document.getElementById('availableSlots').textContent = data.available_slots || 0;
+                document.getElementById('utilization').textContent = 
+                    (data.utilization_rate || 0).toFixed(1) + '%';
+            } catch (error) {
+                console.error('Error loading station status:', error);
+            }
+        }
+
+        async function loadSlots() {
+            try {
+                const response = await fetch('/api/slots');
+                const slots = await response.json();
+                
+                const container = document.getElementById('slotsContainer');
+                container.innerHTML = slots.map(slot => `
+                    <div class="slot ${slot.available ? 'available' : 'occupied'}">
+                        <div class="slot-header">
+                            <span class="slot-id">${slot.id}</span>
+                            <span class="slot-status ${slot.available ? 'status-available' : 'status-occupied'}">
+                                ${slot.available ? 'Available' : 'Occupied'}
+                            </span>
+                        </div>
+                        <div>Power Output: <strong>${slot.power} kW</strong></div>
+                        ${slot.vehicle ? `
+                            <div class="vehicle-info">
+                                <div><strong>Vehicle:</strong> ${slot.vehicle.id}</div>
+                                <div><strong>Type:</strong> ${slot.vehicle.type}</div>
+                                <div><strong>Battery:</strong> ${slot.vehicle.battery}%</div>
+                                <button class="btn btn-danger" style="margin-top: 10px;" 
+                                    onclick="removeVehicle('${slot.vehicle.id}')">
+                                    Remove Vehicle
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading slots:', error);
+            }
+        }
+
+        async function loadQueue() {
+            try {
+                const response = await fetch('/api/queue/status');
+                const data = await response.json();
+                
+                document.getElementById('queueCount').textContent = data.total || 0;
+                
+                const container = document.getElementById('queueContainer');
+                if (data.vehicles && data.vehicles.length > 0) {
+                    container.innerHTML = data.vehicles.map((vehicle, index) => `
+                        <div class="queue-item">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <div class="queue-position">${index + 1}</div>
+                                <div>
+                                    <div><strong>${vehicle.id}</strong> - ${vehicle.type}</div>
+                                    <div style="font-size: 0.9em; color: #666;">
+                                        Battery: ${vehicle.battery}% | Priority: ${vehicle.priority}
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-danger" onclick="removeVehicle('${vehicle.id}')">
+                                Remove
+                            </button>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<div class="empty-state">No vehicles in queue</div>';
+                }
+            } catch (error) {
+                console.error('Error loading queue:', error);
+            }
+        }
+
+        async function loadBillingStats() {
+            try {
+                const response = await fetch('/api/billing/stats');
+                const stats = await response.json();
+                
+                document.getElementById('revenue').textContent = 
+                    '$' + (stats.total_revenue || 0).toFixed(2);
+            } catch (error) {
+                console.error('Error loading billing stats:', error);
+            }
+        }
+
+        document.getElementById('addVehicleForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const vehicleData = {
+                id: document.getElementById('vehicleId').value,
+                type: document.getElementById('vehicleType').value,
+                battery: document.getElementById('batteryLevel').value,
+                capacity: 60.0,
+                reservation: document.getElementById('hasReservation').checked
+            };
+
+            try {
+                const response = await fetch('/api/vehicle/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(vehicleData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    document.getElementById('addVehicleForm').reset();
+                    loadAllData();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error adding vehicle: ' + error.message);
+            }
+        });
+
+        async function removeVehicle(vehicleId) {
+            if (!confirm(`Remove vehicle ${vehicleId}?`)) return;
+
+            try {
+                const response = await fetch(`/api/vehicle/remove/${vehicleId}`, {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                alert(result.message);
+                loadAllData();
+            } catch (error) {
+                alert('Error removing vehicle: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
