@@ -20,8 +20,8 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 USER appuser
 
-# Expose port (if needed for future API)
-EXPOSE 8000
+# Expose port for Flask API
+EXPOSE 5000
 
 # Run the application
 CMD ["python", "src/main.py"]

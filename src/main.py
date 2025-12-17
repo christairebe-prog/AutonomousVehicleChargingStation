@@ -20,6 +20,9 @@ from services.queue_manager import QueueManager
 from services.billing_service import BillingService
 from services.notification_service import NotificationService
 from services.reservation_service import ReservationService
+import io
+import contextlib
+from flask import Flask, jsonify, Response
 
 
 def simulate_charging_scenario():
@@ -205,14 +208,42 @@ def simulate_charging_scenario():
 
 
 def main():
-    """Main entry point for the application."""
-    try:
-        simulate_charging_scenario()
-    except KeyboardInterrupt:
-        print("\n\nSimulation interrupted by user.")
-    except Exception as e:
-        print(f"\n\nError occurred: {e}")
-        raise
+    """Main entry point for the application.
+
+    By default the module starts a Flask web server on port 5000. You can
+    also run `python src/main.py console` to execute the simulation once
+    on the console and then exit.
+    """
+    # Allow running the simulation directly in console mode
+    if len(sys.argv) > 1 and sys.argv[1] == "console":
+        try:
+            simulate_charging_scenario()
+        except KeyboardInterrupt:
+            print("\n\nSimulation interrupted by user.")
+        except Exception:
+            raise
+        return
+
+    # Create Flask app and expose endpoints
+    app = Flask(__name__)
+
+    @app.route("/")
+    def index():
+        return jsonify({"status": "ok", "message": "Autonomous Vehicle Charging Station API"})
+
+    @app.route("/simulate")
+    def simulate_endpoint():
+        # Capture printed simulation output and return as plain text
+        buf = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(buf):
+                simulate_charging_scenario()
+        except Exception as e:
+            buf.write(f"\n\nError during simulation: {e}\n")
+        return Response(buf.getvalue(), mimetype="text/plain")
+
+    # Run the Flask development server on port 5000
+    app.run(host="0.0.0.0", port=5000)
 
 
 if __name__ == "__main__":
