@@ -1,0 +1,121 @@
+@startuml Sequence Diagram - Vehicle Charging Process
+
+actor "Autonomous\nVehicle" as AV
+participant "ChargingStation" as CS
+participant "QueueManager" as QM
+participant "ChargingSlot" as Slot
+participant "BillingService" as BS
+participant "NotificationService" as NS
+
+activate AV
+
+AV -> CS: requestChargingSlot(vehicle)
+activate CS
+
+CS -> CS: checkAvailableSlots()
+
+alt Slots Available
+    CS -> Slot: assignVehicle(vehicle)
+    activate Slot
+    Slot --> CS: slot assigned
+    deactivate Slot
+    
+    CS -> NS: notify("Slot assigned")
+    activate NS
+    NS -> AV: update("Slot X assigned")
+    deactivate NS
+    
+else No Slots Available
+    CS -> QM: addToQueue(vehicle)
+    activate QM
+    QM -> QM: calculatePriority(vehicle)
+    QM --> CS: position in queue
+    deactivate QM
+    
+    CS -> NS: notify("Added to queue")
+    activate NS
+    NS -> AV: update("Position: N")
+    deactivate NS
+    
+    ... Vehicle waits in queue ...
+    
+    CS -> QM: getNextVehicle()
+    activate QM
+    QM --> CS: vehicle
+    deactivate QM
+    
+    CS -> Slot: assignVehicle(vehicle)
+    activate Slot
+    Slot --> CS: slot assigned
+    deactivate Slot
+    
+    CS -> NS: notify("Slot available")
+    activate NS
+    NS -> AV: update("Slot ready")
+    deactivate NS
+end
+
+AV -> Slot: startCharging()
+activate Slot
+
+Slot -> CS: notifyChargingStarted(vehicle)
+CS -> NS: notify("Charging started")
+activate NS
+NS -> AV: update("Charging in progress")
+deactivate NS
+
+... Charging in progress ...
+
+loop Monitor Charging
+    Slot -> Slot: updateChargingStatus()
+    Slot -> CS: reportStatus()
+    CS -> NS: notify("Status update")
+    activate NS
+    NS -> AV: update("Battery: X%")
+    deactivate NS
+end
+
+Slot -> Slot: detectChargingComplete()
+Slot -> CS: notifyChargingComplete(vehicle)
+deactivate Slot
+
+CS -> BS: calculateCost(vehicle, duration, power)
+activate BS
+BS -> BS: applyPricingRules()
+BS --> CS: total_cost
+deactivate BS
+
+CS -> BS: processPayment(vehicle, cost)
+activate BS
+BS --> CS: payment_success
+BS -> BS: generateInvoice()
+BS --> AV: invoice
+deactivate BS
+
+CS -> NS: notify("Charging complete")
+activate NS
+NS -> AV: update("Ready to leave")
+deactivate NS
+
+AV -> CS: releaseSlot()
+CS -> Slot: release()
+activate Slot
+Slot --> CS: slot available
+deactivate Slot
+
+CS -> QM: processQueue()
+activate QM
+QM --> CS: next vehicle (if any)
+deactivate QM
+
+deactivate CS
+deactivate AV
+
+note over CS, NS
+  Observer Pattern enables
+  loose coupling between
+  ChargingStation and
+  notification recipients
+end note
+
+@enduml

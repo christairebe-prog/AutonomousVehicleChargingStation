@@ -1,0 +1,56 @@
+@startuml Use Case Diagram - Autonomous Vehicle Charging Station
+
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Autonomous Vehicle" as AV
+actor "Fleet Manager" as FM
+actor "System Admin" as SA
+
+rectangle "Charging Station System" {
+  usecase "Request Charging Slot" as UC1
+  usecase "Join Queue" as UC2
+  usecase "Reserve Slot" as UC3
+  usecase "Start Charging" as UC4
+  usecase "Monitor Charging Status" as UC5
+  usecase "Complete Charging" as UC6
+  usecase "Receive Notification" as UC7
+  usecase "Process Payment" as UC8
+  usecase "View Station Status" as UC9
+  usecase "Manage Pricing" as UC10
+  usecase "Generate Reports" as UC11
+  usecase "Configure Station" as UC12
+}
+
+AV --> UC1
+AV --> UC2
+AV --> UC3
+AV --> UC4
+AV --> UC5
+AV --> UC6
+AV --> UC7
+AV --> UC8
+
+FM --> UC9
+FM --> UC11
+
+SA --> UC10
+SA --> UC12
+
+UC1 ..> UC2 : <<include>>
+UC3 ..> UC1 : <<extend>>
+UC4 ..> UC7 : <<include>>
+UC6 ..> UC8 : <<include>>
+UC6 ..> UC7 : <<include>>
+
+note right of UC3
+  Vehicles can reserve slots
+  in advance for planned trips
+end note
+
+note bottom of UC7
+  Real-time notifications using
+  Observer Pattern
+end note
+
+@enduml

@@ -1,0 +1,125 @@
+@startuml Class Diagram - Autonomous Vehicle Charging Station
+
+' Observer Pattern Implementation
+interface Observer {
+  +update(message: str): void
+}
+
+class Subject {
+  -observers: List[Observer]
+  +attach(observer: Observer): void
+  +detach(observer: Observer): void
+  +notify(message: str): void
+}
+
+' Core Models
+class Vehicle {
+  -vehicle_id: str
+  -vehicle_type: VehicleType
+  -battery_capacity: float
+  -current_charge: float
+  -priority: int
+  +get_required_charge(): float
+  +update_charge(amount: float): void
+  +update(message: str): void
+}
+
+enum VehicleType {
+  SEDAN
+  SUV
+  TRUCK
+  BUS
+}
+
+class ChargingSlot {
+  -slot_id: str
+  -power_rating: float
+  -is_available: bool
+  -current_vehicle: Vehicle
+  -charging_start_time: datetime
+  +assign_vehicle(vehicle: Vehicle): bool
+  +release_vehicle(): Vehicle
+  +get_charging_duration(): float
+}
+
+class ChargingStation {
+  -station_id: str
+  -location: str
+  -slots: List[ChargingSlot]
+  -queue: PriorityQueue
+  -observers: List[Observer]
+  +add_slot(slot: ChargingSlot): void
+  +get_available_slots(): List[ChargingSlot]
+  +add_to_queue(vehicle: Vehicle): void
+  +process_queue(): void
+  +notify(message: str): void
+}
+
+' Services
+class QueueManager {
+  -queue: PriorityQueue
+  +add_vehicle(vehicle: Vehicle): void
+  +get_next_vehicle(): Vehicle
+  +get_queue_position(vehicle: Vehicle): int
+  -calculate_priority(vehicle: Vehicle): int
+}
+
+class BillingService {
+  -pricing_config: dict
+  +calculate_cost(vehicle: Vehicle, duration: float, power: float): float
+  +process_payment(vehicle: Vehicle, amount: float): bool
+  +generate_invoice(vehicle: Vehicle): Invoice
+}
+
+class NotificationService {
+  -notification_channels: List[str]
+  +send_notification(vehicle: Vehicle, message: str): void
+  +update(message: str): void
+}
+
+class Invoice {
+  -invoice_id: str
+  -vehicle_id: str
+  -charging_duration: float
+  -power_consumed: float
+  -total_cost: float
+  -timestamp: datetime
+}
+
+class ReservationService {
+  -reservations: dict
+  +create_reservation(vehicle: Vehicle, time: datetime): str
+  +cancel_reservation(reservation_id: str): bool
+  +check_reservation(vehicle: Vehicle): bool
+}
+
+' Relationships
+Subject <|-- ChargingStation
+Observer <|.. Vehicle
+Observer <|.. NotificationService
+
+ChargingStation "1" *-- "many" ChargingSlot
+ChargingStation "1" *-- "1" QueueManager
+ChargingStation --> BillingService
+ChargingStation --> NotificationService
+ChargingStation --> ReservationService
+
+ChargingSlot --> Vehicle : charges
+Vehicle --> VehicleType
+BillingService --> Invoice : creates
+QueueManager --> Vehicle : manages
+
+note right of ChargingStation
+  Implements Observer Pattern
+  as Subject to notify vehicles
+  and services
+end note
+
+note left of QueueManager
+  Uses priority queue based on:
+  - Vehicle type
+  - Battery level
+  - Reservation status
+end note
+
+@enduml

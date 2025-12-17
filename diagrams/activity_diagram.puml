@@ -1,0 +1,91 @@
+@startuml Activity Diagram - Vehicle Charging Process
+
+start
+
+:Autonomous Vehicle arrives at station;
+
+if (Has reservation?) then (yes)
+  :Verify reservation;
+  if (Reservation valid?) then (yes)
+    :Assign reserved slot;
+  else (no)
+    :Add to queue;
+  endif
+else (no)
+  :Check available slots;
+  if (Slots available?) then (yes)
+    :Calculate priority;
+    if (High priority?) then (yes)
+      :Assign slot immediately;
+    else (no)
+      :Add to priority queue;
+    endif
+  else (no)
+    :Add to priority queue;
+  endif
+endif
+
+:Wait in queue (if applicable);
+
+partition "Charging Process" {
+  :Vehicle enters charging slot;
+  
+  :Connect charging cable;
+  
+  :Authenticate vehicle;
+  
+  :Start charging;
+  
+  fork
+    :Monitor battery level;
+  fork again
+    :Monitor charging time;
+  fork again
+    :Monitor power consumption;
+  end fork
+  
+  :Notify vehicle (charging started);
+  
+  repeat
+    :Continue charging;
+    :Update charging status;
+  repeat while (Battery full OR Time limit reached?) is (no)
+  
+  :Stop charging;
+  
+  :Notify vehicle (charging complete);
+}
+
+partition "Billing Process" {
+  :Calculate charging cost;
+  
+  :Generate invoice;
+  
+  :Process payment;
+  
+  if (Payment successful?) then (yes)
+    :Send receipt;
+  else (no)
+    :Retry payment;
+  endif
+}
+
+:Disconnect vehicle;
+
+:Release charging slot;
+
+:Update slot availability;
+
+:Process next vehicle in queue;
+
+:Notify next vehicle in queue;
+
+stop
+
+note right
+  System uses Observer Pattern
+  to send real-time notifications
+  at key stages
+end note
+
+@enduml
