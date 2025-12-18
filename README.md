@@ -87,12 +87,12 @@ pip install -r requirements.txt
 
 ### Running the Application
 ```bash
-python src/main.py
+cd C:\Users\hp\Documents\AutonomousVehicleChargingStation; python src/app.py
 ```
 
 ### Running Tests
 ```bash
-pytest tests/ -v
+cd C:\Users\hp\Documents\AutonomousVehicleChargingStation; python -m pytest tests/ -v
 ```
 
 ### Docker Deployment
@@ -114,6 +114,17 @@ This project implements the **Observer Pattern** to handle real-time notificatio
 - **Unit Tests**: Test individual components (queue manager, billing service)
 - **Integration Tests**: Test interactions between components
 - **Test Coverage**: Aim for >80% code coverage
+## Best Practices 
+
+I followed Google's Python coding standards:
+
+- Clear naming conventions: descriptive variable and function names
+- Type hints: all functions have proper type annotations
+- Docstrings: every class and method has documentation
+- Modular structure: separated concerns into models, services, and patterns
+- SOLID principles: Single responsibility, Open/closed, Dependency inversion
+- Clean code: no magic numbers, proper error handling, consistent formatting
+
 
 ## Coding Standards
 - Follow PEP 8 style guide
