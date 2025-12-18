@@ -149,7 +149,9 @@ I followed Google's Python coding standards:
 - Meaningful commit messages following conventional commit
 
  ## to Dockerize the system
-  - docker compose up --build 
+ ```bash
+  - docker compose up --build
+,,,
 
 
 ## License
