@@ -124,10 +124,8 @@ This project implements the **Observer Pattern** to handle real-time notificatio
 ## Version Control
 - Git is used for version control
 - Feature branch workflow
-- Meaningful commit messages following conventional commits
+- Meaningful commit messages following conventional commit
 
-## Contributors
-- [Your Name]
 
 ## License
 MIT License
