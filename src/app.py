@@ -6,6 +6,8 @@ from flask import Flask, render_template, jsonify, request
 import sys
 import os
 from pathlib import Path
+import threading
+import time
 
 # Add src directory to Python path
 src_dir = Path(__file__).parent
@@ -33,6 +35,51 @@ notification_service = NotificationService("NS-001")
 reservation_service = ReservationService()
 
 station.attach(notification_service)
+
+# Background charging simulation
+def auto_charge_vehicles():
+    """Continuously charge vehicles and auto-release when full"""
+    while True:
+        time.sleep(5)  # Update every 5 seconds
+        
+        for slot in station.slots:
+            if slot.current_vehicle and not slot.is_available:
+                vehicle = slot.current_vehicle
+                
+                # Simulate 5 seconds of charging (convert to hours)
+                duration_hours = 5 / 3600  # 5 seconds in hours
+                power_consumed = slot.power_rating * duration_hours
+                
+                # Charge the vehicle
+                vehicle.update_charge(power_consumed)
+                
+                # Auto-release if fully charged (>= 99%)
+                if vehicle.get_charge_percentage() >= 99.0:
+                    print(f"\n[AUTO-RELEASE] Vehicle {vehicle.vehicle_id} fully charged!")
+                    
+                    # Calculate billing
+                    charging_duration = slot.get_charging_duration()
+                    total_power = slot.power_rating * charging_duration
+                    
+                    # Generate invoice and process payment
+                    invoice = billing_service.generate_invoice(vehicle, charging_duration, total_power)
+                    billing_service.process_payment(vehicle, invoice.total_cost)
+                    
+                    print(f"[AUTO-RELEASE] Revenue: ${billing_service.total_revenue:.2f}")
+                    
+                    # Release the slot
+                    station.release_vehicle(slot)
+                    
+                    # Assign next vehicle from queue
+                    if not queue_manager.is_empty():
+                        next_vehicle = queue_manager.get_next_vehicle()
+                        assigned_slot = station.assign_vehicle_to_slot(next_vehicle)
+                        if assigned_slot:
+                            print(f"[AUTO-RELEASE] Next vehicle {next_vehicle.vehicle_id} assigned to {assigned_slot.slot_id}")
+
+# Start background thread
+charging_thread = threading.Thread(target=auto_charge_vehicles, daemon=True)
+charging_thread.start()
 
 
 @app.route('/')
@@ -74,11 +121,17 @@ def add_vehicle():
     data = request.json
     
     vehicle_type = VehicleType[data['type'].upper()]
+    battery_capacity = float(data.get('capacity', 60.0))
+    current_charge = float(data.get('battery', 20.0))
+    
+    # Ensure current_charge doesn't exceed capacity
+    current_charge = min(current_charge, battery_capacity)
+    
     vehicle = Vehicle(
         vehicle_id=data['id'],
         vehicle_type=vehicle_type,
-        battery_capacity=float(data.get('capacity', 60.0)),
-        current_charge=float(data.get('battery', 20.0))
+        battery_capacity=battery_capacity,
+        current_charge=current_charge
     )
     
     # Try to assign to a slot
@@ -103,13 +156,47 @@ def add_vehicle():
 @app.route('/api/vehicle/remove/<vehicle_id>', methods=['POST'])
 def remove_vehicle(vehicle_id):
     """Remove a vehicle from station or queue"""
+    print(f"\n[API] Remove vehicle request for {vehicle_id}")
+    
     # Try to release from slot
     for slot in station.slots:
         if slot.current_vehicle and slot.current_vehicle.vehicle_id == vehicle_id:
+            # Calculate charging duration and power consumed
+            duration = slot.get_charging_duration()
+            vehicle = slot.current_vehicle
+            power_consumed = slot.power_rating * duration  # kWh = kW * hours
+            
+            print(f"[API] Duration: {duration:.4f}h, Power: {power_consumed:.2f}kWh")
+            
+            # Generate invoice (this also calculates cost internally)
+            invoice = billing_service.generate_invoice(vehicle, duration, power_consumed)
+            
+            print(f"[API] Invoice cost: ${invoice.total_cost:.2f}")
+            
+            # Process payment to update revenue
+            billing_service.process_payment(vehicle, invoice.total_cost)
+            
+            print(f"[API] Total revenue now: ${billing_service.total_revenue:.2f}")
+            
+            # Release vehicle from slot
             station.release_vehicle(slot)
+            
+            # Process next vehicle in queue
+            if not queue_manager.is_empty():
+                next_vehicle = queue_manager.get_next_vehicle()
+                assigned_slot = station.assign_vehicle_to_slot(next_vehicle)
+                if assigned_slot:
+                    notification_service.send_notification(
+                        f"Vehicle {next_vehicle.vehicle_id} assigned to slot {assigned_slot.slot_id} from queue"
+                    )
+            
             return jsonify({
                 'success': True,
-                'message': f'Vehicle {vehicle_id} released from slot'
+                'message': f'Vehicle {vehicle_id} released from slot',
+                'cost': invoice.total_cost,
+                'duration_hours': duration,
+                'power_consumed_kwh': power_consumed,
+                'invoice_id': invoice.invoice_id
             })
     
     # Try to remove from queue
@@ -150,10 +237,11 @@ def get_slots():
             'vehicle': None
         }
         if slot.current_vehicle:
+            battery_pct = min(slot.current_vehicle.get_charge_percentage(), 100.0)
             slot_info['vehicle'] = {
                 'id': slot.current_vehicle.vehicle_id,
                 'type': slot.current_vehicle.vehicle_type.name,
-                'battery': round(slot.current_vehicle.get_charge_percentage(), 1)
+                'battery': round(battery_pct, 1)
             }
         slots_data.append(slot_info)
     
