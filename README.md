@@ -109,6 +109,17 @@ This project implements the **Observer Pattern** to handle real-time notificatio
 - **Subject**: ChargingStation (notifies observers about state changes)
 - **Observers**: Vehicles, NotificationService (receive updates)
 - **Benefits**: Loose coupling, scalable notification system
+  
+##  Docker Implementation
+"The application is fully Dockerized:
+
+- Dockerfile in root directory
+- Configured with Python 3.13 base image
+- Installs all dependencies from requirements.txt
+- Exposes port 5000 for Flask web server
+- Can be deployed using: docker build -t charging-station . and docker run -p 5000:5000 charging-station
+"This ensures consistent deployment across different environments."
+
 
 ## Testing Strategy
 - **Unit Tests**: Test individual components (queue manager, billing service)
