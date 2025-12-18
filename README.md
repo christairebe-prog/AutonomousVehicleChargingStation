@@ -148,6 +148,9 @@ I followed Google's Python coding standards:
 - Feature branch workflow
 - Meaningful commit messages following conventional commit
 
+ ## to Dockerize the system
+  - docker compose up --build 
+
 
 ## License
 MIT License
